@@ -8,6 +8,11 @@
       "name": "supervisor-probe",
       "source": "./supervisor-probe",
       "description": "Log-only hook + plugin-data persistence probe (experiment 05)"
+    },
+    {
+      "name": "supervisor-probe3",
+      "source": "./supervisor-probe3",
+      "description": "Cache-bust copy of supervisor-probe v0.3.0 (identical log-only persistence probe under a fresh name)"
     }
   ]
 }

@@ -1,0 +1,8 @@
+{
+  "name": "supervisor-probe3",
+  "version": "0.3.0",
+  "description": "Diagnostic plugin that records hook lifecycle timing and plugin-data persistence for a plumbing experiment. Log-only; never interferes with the session. Writes supervisor-probe-log.jsonl to the session working folder. Details: see the marketplace repo README.",
+  "author": {
+    "name": "Jason (Domain Methods)"
+  }
+}
