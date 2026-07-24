@@ -1,0 +1,13 @@
+{
+  "name": "supervisor-probe-marketplace",
+  "owner": {
+    "name": "Jason (Domain Methods)"
+  },
+  "plugins": [
+    {
+      "name": "supervisor-probe",
+      "source": "./supervisor-probe",
+      "description": "Log-only hook + plugin-data persistence probe (experiment 05)"
+    }
+  ]
+}
