@@ -23,6 +23,11 @@
       "name": "hookprobe-pathref",
       "source": "./hookprobe-pathref",
       "description": "exp-07: hooks config at scripts/hooks.json via plugin.json path field (log-only diagnostic)"
+    },
+    {
+      "name": "ptprobe",
+      "source": "./ptprobe",
+      "description": "exp-08: Prooftrail's client code under a probe name — reports a Cowork sandbox's plugin layout via /ptprobe:doctor --verbose"
     }
   ]
 }
