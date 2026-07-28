@@ -1,0 +1,11 @@
+{
+  "name": "hookprobe-inline",
+  "version": "0.1.0",
+  "description": "Diagnostic (exp-07): tests whether hooks declared INLINE in plugin.json survive install channels and fire. Writes marker files to <tmpdir>/exp07. Harmless, log-only.",
+  "author": { "name": "Jason (Domain Methods)" },
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/probe.js\" inline", "timeout": 10 } ] }
+    ]
+  }
+}

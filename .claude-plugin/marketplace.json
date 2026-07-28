@@ -13,6 +13,16 @@
       "name": "supervisor-probe3",
       "source": "./supervisor-probe3",
       "description": "Cache-bust copy of supervisor-probe v0.3.0 (identical log-only persistence probe under a fresh name)"
+    },
+    {
+      "name": "hookprobe-inline",
+      "source": "./hookprobe-inline",
+      "description": "exp-07: hooks declared INLINE in plugin.json (log-only diagnostic)"
+    },
+    {
+      "name": "hookprobe-pathref",
+      "source": "./hookprobe-pathref",
+      "description": "exp-07: hooks config at scripts/hooks.json via plugin.json path field (log-only diagnostic)"
     }
   ]
 }

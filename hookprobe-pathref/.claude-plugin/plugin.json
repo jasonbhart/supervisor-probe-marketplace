@@ -1,0 +1,7 @@
+{
+  "name": "hookprobe-pathref",
+  "version": "0.1.0",
+  "description": "Diagnostic (exp-07): tests whether a hooks config at scripts/hooks.json referenced via the plugin.json 'hooks' path field survives install channels and fires. Writes marker files to <tmpdir>/exp07. Harmless, log-only.",
+  "author": { "name": "Jason (Domain Methods)" },
+  "hooks": "./scripts/hooks.json"
+}
