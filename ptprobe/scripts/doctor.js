@@ -125,7 +125,17 @@ async function main() {
   const report = {
     plugin_version: PLUGIN_VERSION,
     surface,
-    surface_signals: { hostname: os.hostname(), platform: process.platform, entrypoint: process.env.CLAUDE_CODE_ENTRYPOINT || null },
+    // The signals detectSurface() actually decides on. These are reported in
+    // EVERY mode, beside the conclusion: cloud and local Cowork VMs are
+    // near-twins (both hostname `vm`, both /root/.claude paths), so the
+    // entrypoint is the only thing that tells them apart — and in a real run it
+    // was summarised away because it sat at the bottom of the verbose dump.
+    surface_signals: {
+      hostname: os.hostname(),
+      platform: process.platform,
+      entrypoint: process.env.CLAUDE_CODE_ENTRYPOINT || null,
+      remote: process.env.CLAUDE_CODE_REMOTE || null,
+    },
     token: tokenSummary(),
     // Every path we probed and whether it existed. On an unfamiliar surface this
     // is the most valuable line in the report: it shows exactly where we looked
@@ -140,7 +150,15 @@ async function main() {
     return;
   }
 
-  const lines = [`Prooftrail doctor — plugin ${PLUGIN_VERSION} on surface "${report.surface}"`, ''];
+  // Evidence next to the conclusion. An ABSENT value is diagnostic too, so
+  // render it as (unset) rather than omitting it — omission reads as "not
+  // checked", which is the kind of ambiguity this whole tool exists to remove.
+  const sig = report.surface_signals;
+  const shown = (v) => (v === null || v === '' ? '(unset)' : v);
+  const signalLine =
+    `  detected from: entrypoint=${shown(sig.entrypoint)} hostname=${shown(sig.hostname)} ` +
+    `platform=${shown(sig.platform)} remote=${shown(sig.remote)}`;
+  const lines = [`Prooftrail doctor — plugin ${PLUGIN_VERSION} on surface "${report.surface}"`, signalLine, ''];
   for (const f of findings) {
     lines.push(`[${ICON[f.status] || f.status}] ${f.title}`);
     if (verbose || f.status !== 'ok') lines.push(`       ${f.detail.split('\n').join('\n       ')}`);
@@ -160,7 +178,7 @@ async function main() {
     lines.push('Environment:');
     for (const [k, v] of Object.entries(envSnapshot())) lines.push(`  ${k}=${v}`);
     lines.push('');
-    lines.push(`Surface signals: hostname=${report.surface_signals.hostname} platform=${report.surface_signals.platform} entrypoint=${report.surface_signals.entrypoint}`);
+    // (The deciding signals are already in the header, in every mode.)
     lines.push('');
   }
   // Critical 2: `unknown` must never render as an unqualified all-clear -- a
