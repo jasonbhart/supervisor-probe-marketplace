@@ -987,7 +987,7 @@ function checkToken({ surface, token, probe }) {
     // 2026-07-28; upstream #39455). Telling the user to set it would be a remedy
     // they cannot act on, which is the false lead this diagnostic exists to
     // remove. Say plainly that the surface is not configurable yet.
-    ? 'Run /prooftrail:setup with a fresh setup code — pairing works here, but lasts only this session (sandbox plugin data is wiped between sessions, and claude.ai has no editor for the API_TOKEN setting yet — upstream anthropics/claude-code#39455). To avoid re-pairing every session, place the paired .prooftrail/auth.json in your attached project folder, or use a host surface (CLI, desktop Code tab, SSH).'
+    ? 'Run /prooftrail:setup with a fresh setup code — pairing works here, but lasts only this session (sandbox plugin data is wiped between sessions, and claude.ai has no editor for the API_TOKEN setting yet — upstream anthropics/claude-code#39455). To stay paired across sessions, pair on a host surface (CLI, desktop Code tab, SSH) and copy that machine’s auth.json into your attached project folder as .prooftrail/auth.json — it then syncs in with your project. Never move the token through a conversation.'
     : 'Run /prooftrail:setup to pair this surface.';
   if (!token) {
     return finding('token', 'fail', 'Not connected — no device token', `No token found (checked the API_TOKEN plugin setting and ${path.join(stateDir(), 'auth.json')}).`, repair, { present: false });

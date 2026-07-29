@@ -128,14 +128,32 @@ fetch a code:
 > sessions. You'll need a fresh setup code next session, unless you persist the
 > token in your project (below).
 
-**Persisting across sessions — the workspace token file.** After a successful
-in-session pair, the token lives at `${CLAUDE_PLUGIN_DATA}/auth.json`. If the
-user wants sessions in this project to stay paired, copy it into the attached
-project folder as `.prooftrail/auth.json` (for example under `/mnt/user-data`'s
-project directory). `findToken()` checks that location last, and `collectDiff`
-remains forbidden from shipping it to the judge (`.prooftrail/` is on the
-secret-path denylist). Let the user decide — it is their credential placed in
-their files. Never print the token value into the conversation (ADR-007).
+**Persisting across sessions — the workspace token file.** This is the user's
+job on their own machine, NOT something you do from inside the sandbox.
+
+> **NEVER route the token through this conversation.** Do not offer to write,
+> attach, download, upload, display, or otherwise move `auth.json` through the
+> chat — not as a file card, not as an attachment, not as text. ADR-007 exists
+> precisely so the long-lived token never transits the conversation; that is the
+> entire reason pairing uses a disposable single-use code instead. A sandbox has
+> no direct write path to the user's own folders, and the apparent workaround —
+> passing the credential through chat to get it there — is the specific thing
+> the design forbids. If you find yourself reasoning toward it, stop.
+
+The correct direction is the reverse: the token never leaves the user's machine.
+Tell them to do this themselves, on a **host** surface:
+
+> Pair on a host surface (Claude Code CLI, the desktop Code tab, or an SSH
+> session). That writes `auth.json` into the plugin's data directory on your own
+> machine. Copy it to `.prooftrail/auth.json` inside the folder you attach to
+> Cowork — the file then syncs INTO the sandbox as part of your project, and
+> Prooftrail finds it there automatically. The token never passes through a
+> conversation.
+
+If they would rather not, per-session pairing is a perfectly good answer: one
+fresh setup code at the start of each session, about thirty seconds. Say so
+plainly rather than pushing persistence — note that each pairing consumes a
+device token, so a user pairing every session will accumulate them.
 
 `/ptprobe:doctor` afterwards confirms the state either way.
 
