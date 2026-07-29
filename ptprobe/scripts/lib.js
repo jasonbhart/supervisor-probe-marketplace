@@ -620,6 +620,14 @@ function idempotencyKey(sessionId, promptId, payload) {
  * returned. A non-sandbox, non-desktop process defaults to 'code-cli'.
  */
 function detectSurface() {
+  // Prefer the explicit entrypoint over the hostname heuristic. exp-08 captured
+  // CLAUDE_CODE_ENTRYPOINT=remote_cowork in a real cloud sandbox; `hostname ===
+  // 'vm'` happens to work there too, but it would misclassify any host actually
+  // named "vm" and would miss a sandbox whose hostname changes. This is
+  // load-bearing, not cosmetic: the sandbox-specific findings tell the user that
+  // Cowork cannot be configured yet (#39455), and a misclassified sandbox would
+  // instead be told to run /prooftrail:setup — a remedy that cannot work there.
+  if (process.env.CLAUDE_CODE_ENTRYPOINT === 'remote_cowork') return 'cowork-vm';
   if (process.platform === 'linux' && os.hostname() === 'vm') return 'cowork-vm';
   if (process.env.CLAUDE_CODE_ENTRYPOINT === 'claude-desktop') return 'code-desktop';
   return 'code-cli';
@@ -915,7 +923,13 @@ function checkService({ surface, url, probe }) {
 function checkToken({ surface, token, probe }) {
   const sandbox = surface === 'cowork-vm';
   const repair = sandbox
-    ? 'Set the API_TOKEN plugin setting. Sandbox plugin data is wiped every session, so pairing cannot persist here.'
+    // Sandbox plugin data is wiped every session (exp-05) so pairing cannot
+    // persist, and the API_TOKEN plugin setting -- the documented alternative --
+    // CANNOT BE SET: claude.ai exposes no userConfig editor (verified live
+    // 2026-07-28; upstream #39455). Telling the user to set it would be a remedy
+    // they cannot act on, which is the false lead this diagnostic exists to
+    // remove. Say plainly that the surface is not configurable yet.
+    ? 'Cowork sandboxes cannot be configured for Prooftrail yet: plugin data is wiped every session so pairing cannot persist, and claude.ai currently exposes no editor for the API_TOKEN plugin setting (upstream anthropics/claude-code#39455). Use Claude Code on a host surface — CLI, the desktop Code tab, or an SSH session — until that ships.'
     : 'Run /prooftrail:setup to pair this surface.';
   if (!token) {
     return finding('token', 'fail', 'Not connected — no device token', `No token found (checked the API_TOKEN plugin setting and ${path.join(stateDir(), 'auth.json')}).`, repair, { present: false });
