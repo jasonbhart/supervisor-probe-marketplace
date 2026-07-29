@@ -164,6 +164,35 @@ function findToken() {
       if (t) return t;
     }
   } catch {}
+  // Lowest precedence: a workspace token file, .prooftrail/auth.json, found in
+  // the mounted user directories or near the cwd. This is the Cowork workaround
+  // (2026-07-29): sandbox plugin data is wiped between sessions and #39455
+  // blocks the settings editor everywhere, but attached project files travel
+  // with the user -- pair once, drop the file in the project, and every session
+  // finds it. SECRET_PATH_RE excludes .prooftrail/ so collectDiff can never
+  // ship it to the judge, and ADR-007 holds: the value never transits chat.
+  const candidates = [];
+  for (const d of String(process.env.CLAUDE_ADDITIONAL_DIRECTORIES || '').split(':')) {
+    if (d) candidates.push(d);
+  }
+  let walk = process.cwd();
+  for (let i = 0; i < 4; i++) {
+    candidates.push(walk);
+    const up = path.dirname(walk);
+    if (up === walk) break;
+    walk = up;
+  }
+  for (const d of candidates) {
+    try {
+      const f = path.join(d, '.prooftrail', 'auth.json');
+      if (fs.existsSync(f)) {
+        const t = JSON.parse(fs.readFileSync(f, 'utf8')).token;
+        if (t) return t;
+      }
+    } catch {
+      /* malformed or unreadable -- keep looking, fail-soft */
+    }
+  }
   return null;
 }
 
@@ -229,13 +258,41 @@ function validateBaseUrl(raw) {
  * notice -- an ignored override must be VISIBLE, never a silent "why isn't my
  * env var doing anything" (the plan's explicit requirement).
  */
+/** The shipped manifest's userConfig.SERVICE_URL.default, or null. Same
+ * read-from-manifest pattern as readPluginVersion(): the default travels with
+ * the BUILD, not the source, so dev and tests (no shipped manifest) see no
+ * default and self-hosters can strip it from their build. Decision 2026-07-29
+ * (Cowork workaround design): the hosted URL is not a secret and is identical
+ * for every customer, and sandboxes have no working settings editor (#39455) —
+ * a baked default with override preserved beats "required, no default". */
+function readManifestServiceUrlDefault() {
+  const roots = [
+    process.env.CLAUDE_PLUGIN_ROOT && path.join(process.env.CLAUDE_PLUGIN_ROOT, '.claude-plugin', 'plugin.json'),
+    path.join(__dirname, '..', '.claude-plugin', 'plugin.json'),
+  ].filter(Boolean);
+  for (const p of roots) {
+    try {
+      const d = JSON.parse(fs.readFileSync(p, 'utf8'))?.userConfig?.SERVICE_URL?.default;
+      if (typeof d === 'string' && d) return d;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 function resolveBaseUrl() {
   const pin = process.env.CLAUDE_PLUGIN_OPTION_SERVICE_URL;
   const envOverride = process.env.REVIEWSVC_URL;
   if (pin) {
     return { url: validateBaseUrl(pin), envIgnored: Boolean(envOverride) };
   }
-  return { url: validateBaseUrl(envOverride), envIgnored: false };
+  if (envOverride) {
+    return { url: validateBaseUrl(envOverride), envIgnored: false };
+  }
+  // Lowest precedence: the built-in default. validateBaseUrl still applies —
+  // an invalid default is rejected, never trusted.
+  return { url: validateBaseUrl(readManifestServiceUrlDefault()), envIgnored: false };
 }
 
 // C15: a diff well over the target maxChars cap (200KB default) can still
@@ -273,6 +330,7 @@ const SECRET_PATH_RE = new RegExp(
     '(^|/)\\.(netrc|npmrc|pypirc|pgpass|htpasswd)$',
     '(^|/)id_(rsa|dsa|ecdsa|ed25519)$', // ssh private keys
     '(^|/)\\.(ssh|aws|gnupg|kube|docker)/', // credential directories
+    '(^|/)\\.prooftrail/', // our own workspace token file (Cowork workaround) -- never ship it to the judge
     // whole basename only (+ optional single extension), so `credentials.json`
     // is withheld while `docs/secrets-design.md` is still reviewed
     '(^|/)(credentials|secrets?|service-account)(\\.[A-Za-z0-9]+)?$',
@@ -929,7 +987,7 @@ function checkToken({ surface, token, probe }) {
     // 2026-07-28; upstream #39455). Telling the user to set it would be a remedy
     // they cannot act on, which is the false lead this diagnostic exists to
     // remove. Say plainly that the surface is not configurable yet.
-    ? 'Cowork sandboxes cannot be configured for Prooftrail yet: plugin data is wiped every session so pairing cannot persist, and claude.ai currently exposes no editor for the API_TOKEN plugin setting (upstream anthropics/claude-code#39455). Use Claude Code on a host surface — CLI, the desktop Code tab, or an SSH session — until that ships.'
+    ? 'Run /prooftrail:setup with a fresh setup code — pairing works here, but lasts only this session (sandbox plugin data is wiped between sessions, and claude.ai has no editor for the API_TOKEN setting yet — upstream anthropics/claude-code#39455). To avoid re-pairing every session, place the paired .prooftrail/auth.json in your attached project folder, or use a host surface (CLI, desktop Code tab, SSH).'
     : 'Run /prooftrail:setup to pair this surface.';
   if (!token) {
     return finding('token', 'fail', 'Not connected — no device token', `No token found (checked the API_TOKEN plugin setting and ${path.join(stateDir(), 'auth.json')}).`, repair, { present: false });
